@@ -1,0 +1,331 @@
+/**
+ * 系统管理  公司管理
+ */
+<template>
+  <div>
+    
+    <!-- 搜索筛选 -->
+    <el-form :inline="true" :model="formInline" class="user-search">
+      <el-form-item label="编号">
+        <el-input size="small" v-model="formInline.deptName" placeholder="输入编号"></el-input>
+      </el-form-item>
+      <el-form-item label="档案名称">
+        <el-input size="small" v-model="formInline.deptNo" placeholder="请输入档案名称"></el-input>
+      </el-form-item>
+      <el-form-item label="来文单位">
+        <el-input size="small" v-model="formInline.deptNo" placeholder="输入部门代码"></el-input>
+      </el-form-item>
+      <el-form-item label="档案类别">
+        <el-select size="small" v-model="formInline.roleId" placeholder="请选择">
+          <el-option selected label="请选择" value="0"></el-option>
+          <el-option
+            v-for="parm in userparm"
+            :key="parm.roleId"
+            :label="parm.roleName"
+            :value="parm.roleId"
+          ></el-option>
+        </el-select>
+      </el-form-item>
+      <br />
+      <el-form-item label="收文日期">
+        <el-input placeholder="请选择日期" suffix-icon="el-icon-date" v-model="input1"></el-input>
+      </el-form-item>
+      <el-form-item label="到">
+        <el-input placeholder="请选择日期" suffix-icon="el-icon-date" v-model="input1"></el-input>
+      </el-form-item>
+      <el-form-item style="margin-left: 50px;">
+        <el-button size="small" type="primary" icon="el-icon-search" @click="search">搜索</el-button>
+      </el-form-item>
+    </el-form>
+    <!--列表-->
+    <el-table
+      size="small"
+      :data="listData"
+      highlight-current-row
+      v-loading="loading"
+      border
+      element-loading-text="拼命加载中"
+      style="width: 100%;"
+    >
+      <el-table-column align="center" type="selection" width="100"></el-table-column>
+      <el-table-column sortable prop="deptNo" label="序号" width="150"></el-table-column>
+      <el-table-column sortable prop="code" label="档案编码" width="160"></el-table-column>
+      <el-table-column sortable prop="deptName" label="档案名称" width="300"></el-table-column>
+      <el-table-column sortable prop="editDepartment" label="创建部门" width="300"></el-table-column>
+      <el-table-column sortable prop="editTime" label="创建时间" width="300">
+        <template slot-scope="scope">
+          <div>{{scope.row.editTime|timestampToTime}}</div>
+        </template>
+      </el-table-column>
+      <el-table-column sortable prop="power" label="权限" width="150"></el-table-column>
+      <el-table-column sortable prop="creater" label="创建人" width="200"></el-table-column> 
+    </el-table>
+    <!-- 分页组件 -->
+    <Pagination v-bind:child-msg="pageparm" @callFather="callFather"></Pagination>
+  </div>
+</template>
+
+<script>
+import { deptList, deptSave, deptDelete } from "../../api/userMG";
+import Pagination from "../../components/Pagination";
+export default {
+  data() {
+    return {
+      radio: 3,
+      active: 0,
+      nshow: true, //switch开启
+      fshow: false, //switch关闭
+      loading: false, //是显示加载
+      editFormVisible: false, //控制编辑页面显示与隐藏
+      title: "添加",
+      editForm: {
+        deptId: "",
+        deptName: "",
+        deptNo: "",
+        token: localStorage.getItem("logintoken")
+      },
+      // rules表单验证
+      rules: {
+        deptName: [
+          { required: true, message: "请输入档案名称", trigger: "blur" }
+        ],
+        deptNo: [{ required: true, message: "请输入档案代码", trigger: "blur" }]
+      },
+      formInline: {
+        page: 1,
+        limit: 10,
+        varLable: "",
+        varName: "",
+        token: localStorage.getItem("logintoken")
+      },
+      
+      userparm: [], //搜索权限
+      listData: [], //用户数据
+      // 分页参数
+      pageparm: {
+        currentPage: 1,
+        pageSize: 10,
+        total: 10
+      }
+    };
+  },
+  // 注册组件
+  components: {
+    Pagination
+  },
+  /**
+   * 数据发生改变
+   */
+
+  /**
+   * 创建完毕
+   */
+  created() {
+    this.getdata(this.formInline);
+  },
+
+  /**
+   * 里面的方法只有被调用才会执行
+   */
+  methods: {
+    //   状态栏
+    next() {
+      if (this.active++ > 2) this.active = 0;
+    },
+    // 获取公司列表
+    getdata(parameter) {
+      this.loading = true;
+      // 模拟数据
+      let res = {
+        code: 0,
+        msg: null,
+        count: 5,
+        data: [
+          {
+            creater: null,
+            editDepartment: "档案部",
+            editTime: 1526700200000,
+            power: "读写",
+            deptName: "上海云起",
+            deptNo: "1",
+            code: 1
+          },
+          {
+           creater: null,
+            editDepartment: "档案部",
+            editTime: 1526700200000,
+            power: "读写",
+            deptName: "上海分公司",
+            deptNo: "1",
+            code: 5
+          },
+          {
+            creater: null,
+            editDepartment: "档案部",
+            editTime: 1526700200000,
+            power: "读写",
+            deptName: "上海云起",
+            deptNo: "1",
+            code: 4
+          },
+          {
+            creater: null,
+            editDepartment: "档案部",
+            editTime: 1526700200000,
+            power: "读写",
+            deptName: "上海分公司",
+            deptNo: "1",
+            code: 3
+          },
+          {
+            creater: null,
+            editDepartment: "档案部",
+            editTime: 1526700200000,
+            power: "读写",
+            deptName: "上海分公司",
+            deptNo: "1",
+            code: 1
+          }
+        ]
+      };
+      this.loading = false;
+      this.listData = res.data;
+      // 分页赋值
+      this.pageparm.currentPage = this.formInline.page;
+      this.pageparm.pageSize = this.formInline.limit;
+      this.pageparm.total = res.count;
+      // 模拟数据结束
+
+      /***
+       * 调用接口，注释上面模拟数据 取消下面注释
+       */
+      // deptList(parameter)
+      //   .then(res => {
+      //     this.loading = false
+      //     if (res.success == false) {
+      //       this.$message({
+      //         type: 'info',
+      //         message: res.msg
+      //       })
+      //     } else {
+      //       this.listData = res.data
+      //       // 分页赋值
+      //       this.pageparm.currentPage = this.formInline.page
+      //       this.pageparm.pageSize = this.formInline.limit
+      //       this.pageparm.total = res.count
+      //     }
+      //   })
+      //   .catch(err => {
+      //     this.loading = false
+      //     this.$message.error('菜单加载失败，请稍后再试！')
+      //   })
+    },
+    // 分页插件事件
+    callFather(parm) {
+      this.formInline.page = parm.currentPage;
+      this.formInline.limit = parm.pageSize;
+      this.getdata(this.formInline);
+    },
+    // 搜索事件
+    search() {
+      this.getdata(this.formInline);
+    },
+    //显示编辑界面
+    handleEdit: function(index, row) {
+      this.editFormVisible = true;
+      if (row != undefined && row != "undefined") {
+        this.title = "修改";
+        this.editForm.deptId = row.deptId;
+        this.editForm.deptName = row.deptName;
+        this.editForm.deptNo = row.deptNo;
+      } else {
+        this.title = "添加";
+        this.editForm.deptId = "";
+        this.editForm.deptName = "";
+        this.editForm.deptNo = "";
+      }
+    },
+    // 编辑、增加页面保存方法
+    submitForm(editData) {
+      this.$refs[editData].validate(valid => {
+        if (valid) {
+          deptSave(this.editForm)
+            .then(res => {
+              this.editFormVisible = false;
+              this.loading = false;
+              if (res.success) {
+                this.getdata(this.formInline);
+                this.$message({
+                  type: "success",
+                  message: "档案保存成功！"
+                });
+              } else {
+                this.$message({
+                  type: "info",
+                  message: res.msg
+                });
+              }
+            })
+            .catch(err => {
+              this.editFormVisible = false;
+              this.loading = false;
+              this.$message.error("档案保存失败，请稍后再试！");
+            });
+        } else {
+          return false;
+        }
+      });
+    },
+    // 删除公司
+    deleteUser(index, row) {
+      this.$confirm("确定要删除吗?", "信息", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      })
+        .then(() => {
+          deptDelete(row.deptId)
+            .then(res => {
+              if (res.success) {
+                this.$message({
+                  type: "success",
+                  message: "档案已删除!"
+                });
+                this.getdata(this.formInline);
+              } else {
+                this.$message({
+                  type: "info",
+                  message: res.msg
+                });
+              }
+            })
+            .catch(err => {
+              this.loading = false;
+              this.$message.error("档案删除失败，请稍后再试！");
+            });
+        })
+        .catch(() => {
+          this.$message({
+            type: "info",
+            message: "已取消删除"
+          });
+        });
+    },
+    // 关闭编辑、增加弹出框
+    closeDialog() {
+      this.editFormVisible = false;
+    }
+  }
+};
+</script>
+
+<style scoped>
+.user-search {
+  margin-top: 20px;
+}
+.userRole {
+  width: 100%;
+}
+</style>
+
+ 
